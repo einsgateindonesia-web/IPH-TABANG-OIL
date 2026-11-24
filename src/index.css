@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-serif-form: 'Source Serif 4', 'Times New Roman', Georgia, serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #f1f5f9;
+    color: #0f172a;
+  }
+}
+
+.font-form-serif {
+  font-family: var(--font-serif-form);
+}
+
+.font-data-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Exact PDF Form Color Tokens */
+.cell-flowmeter {
+  background-color: #fff2cc;
+}
+
+.cell-greasing {
+  background-color: #ddebf7;
+}
+
+.box-status-legend {
+  background-color: #fce4d6;
+}
+
+/* Form Paper Shadow */
+.paper-sheet {
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+/* Print Rules — Exact A4 Landscape Output */
+@page {
+  size: A4 landscape;
+  margin: 6mm 7mm;
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .paper-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .paper-sheet input,
+  .paper-sheet select {
+    background: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .paper-sheet input::placeholder {
+    color: transparent !important;
+  }
+
+  .print-hide-controls {
+    display: none !important;
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Karunia Oil & Lubricant Log Sheet",
+  "description": "Aplikasi pencatatan penggunaan oli, greasing, dan coolant armada dengan format cetak persis form Oil & Lubricant's Consumption Log Sheet Karunia Armada Indonesia.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
