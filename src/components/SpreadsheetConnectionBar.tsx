@@ -16,7 +16,9 @@ import type {
 } from '../types/logSheet';
 import {
   appendGoogleSpreadsheet,
+  FIREBASE_AUTH_SETTINGS_URL,
   getAccessToken,
+  GoogleAuthActionError,
   googleSignIn,
   initAuth,
   SheetsAuthExpiredError,
@@ -75,6 +77,7 @@ export function SpreadsheetConnectionBar({
   const [feedback, setFeedback] = useState<{
     type: 'success' | 'error';
     text: string;
+    isUnauthorizedDomain?: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -141,6 +144,9 @@ export function SpreadsheetConnectionBar({
           err instanceof Error
             ? err.message
             : 'Login Google dibatalkan atau gagal.',
+        isUnauthorizedDomain:
+          err instanceof GoogleAuthActionError &&
+          err.code === 'auth/unauthorized-domain',
       });
       return false;
     } finally {
@@ -400,7 +406,7 @@ export function SpreadsheetConnectionBar({
       {feedback && (
         <div
           role="status"
-          className={`no-print mb-3 rounded-md border px-3 py-2 text-xs flex items-center justify-between gap-2 ${
+          className={`no-print mb-3 rounded-md border px-3 py-2 text-xs flex flex-wrap items-center justify-between gap-2 ${
             feedback.type === 'success'
               ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
               : 'bg-red-50 border-red-200 text-red-800'
@@ -414,14 +420,27 @@ export function SpreadsheetConnectionBar({
             )}
             <span>{feedback.text}</span>
           </div>
-          <button
-            type="button"
-            aria-label="Tutup pemberitahuan"
-            onClick={() => setFeedback(null)}
-            className="text-current opacity-60 hover:opacity-100 cursor-pointer"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {feedback.isUnauthorizedDomain && (
+              <a
+                href={FIREBASE_AUTH_SETTINGS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-red-300 hover:bg-red-100 text-red-900 font-semibold rounded"
+              >
+                <span>Buka Authorized Domains</span>
+                <ExternalLink className="w-3 h-3" aria-hidden="true" />
+              </a>
+            )}
+            <button
+              type="button"
+              aria-label="Tutup pemberitahuan"
+              onClick={() => setFeedback(null)}
+              className="text-current opacity-60 hover:opacity-100 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       )}
 

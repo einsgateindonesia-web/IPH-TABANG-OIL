@@ -23,7 +23,9 @@ import {
   appendGoogleSpreadsheet,
   createGoogleSpreadsheet,
   fetchSpreadsheetMetadata,
+  FIREBASE_AUTH_SETTINGS_URL,
   getAccessToken,
+  GoogleAuthActionError,
   googleSignIn,
   initAuth,
   logoutGoogle,
@@ -155,6 +157,7 @@ export function SpreadsheetView({
     type: 'success' | 'error';
     text: string;
     url?: string;
+    actionLabel?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -194,7 +197,17 @@ export function SpreadsheetView({
         err instanceof Error
           ? err.message
           : 'Login Google dibatalkan atau gagal.';
-      setStatusMessage({ type: 'error', text: message });
+      const isUnauthorized =
+        err instanceof GoogleAuthActionError &&
+        err.code === 'auth/unauthorized-domain';
+      setStatusMessage({
+        type: 'error',
+        text: message,
+        url: isUnauthorized ? FIREBASE_AUTH_SETTINGS_URL : undefined,
+        actionLabel: isUnauthorized
+          ? 'Buka Authorized Domains Firebase'
+          : undefined,
+      });
     } finally {
       setIsLoggingIn(false);
     }
@@ -627,9 +640,13 @@ export function SpreadsheetView({
                 href={statusMessage.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded text-xs shrink-0 self-start sm:self-center"
+                className={`inline-flex items-center gap-1.5 px-3 py-1 font-semibold rounded text-xs shrink-0 self-start sm:self-center ${
+                  statusMessage.type === 'success'
+                    ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
+                    : 'bg-white border border-red-300 hover:bg-red-100 text-red-900'
+                }`}
               >
-                <span>Buka Google Sheets</span>
+                <span>{statusMessage.actionLabel || 'Buka Google Sheets'}</span>
                 <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
               </a>
             )}

@@ -19,7 +19,9 @@ import {
   appendGoogleSpreadsheet,
   createGoogleSpreadsheet,
   fetchSpreadsheetMetadata,
+  FIREBASE_AUTH_SETTINGS_URL,
   getAccessToken,
+  GoogleAuthActionError,
   googleSignIn,
   initAuth,
   SheetsAuthExpiredError,
@@ -105,6 +107,8 @@ export function SendToSheetsModal({
   const [isInspecting, setIsInspecting] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [isUnauthorizedDomainError, setIsUnauthorizedDomainError] =
+    useState(false);
   const [successInfo, setSuccessInfo] = useState<{
     title: string;
     url: string;
@@ -177,11 +181,16 @@ export function SendToSheetsModal({
   const handleSignIn = async () => {
     setIsLoggingIn(true);
     setErrorText(null);
+    setIsUnauthorizedDomainError(false);
     try {
       const res = await googleSignIn();
       setUser(res.user);
       setHasToken(Boolean(res.accessToken));
     } catch (err) {
+      setIsUnauthorizedDomainError(
+        err instanceof GoogleAuthActionError &&
+          err.code === 'auth/unauthorized-domain'
+      );
       setErrorText(
         err instanceof Error
           ? err.message
@@ -704,10 +713,25 @@ export function SendToSheetsModal({
         {errorText && (
           <div
             role="alert"
-            className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 flex items-start gap-2"
+            className="rounded-md border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-800 space-y-2"
           >
-            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
-            <span>{errorText}</span>
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
+              <span>{errorText}</span>
+            </div>
+            {isUnauthorizedDomainError && (
+              <div className="pl-6">
+                <a
+                  href={FIREBASE_AUTH_SETTINGS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-red-300 hover:bg-red-100 text-red-900 font-semibold rounded"
+                >
+                  <span>Buka Authorized Domains Firebase</span>
+                  <ExternalLink className="w-3 h-3" aria-hidden="true" />
+                </a>
+              </div>
+            )}
           </div>
         )}
 

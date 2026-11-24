@@ -15,9 +15,28 @@ import {
   type WorksheetSpec,
 } from './spreadsheetBuilder';
 
+import {
+  formatGoogleAuthError,
+  type FormattedAuthError,
+} from './googleAuthErrors';
+
 export const SCOPES = [
   'https://www.googleapis.com/auth/spreadsheets',
 ] as const;
+
+export const FIREBASE_AUTH_SETTINGS_URL = `https://console.firebase.google.com/project/${firebaseConfig.projectId}/authentication/settings`;
+
+export class GoogleAuthActionError extends Error {
+  code: string;
+  unauthorizedDomain?: string;
+
+  constructor(info: FormattedAuthError) {
+    super(info.message);
+    this.name = 'GoogleAuthActionError';
+    this.code = info.code;
+    this.unauthorizedDomain = info.unauthorizedDomain;
+  }
+}
 
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -66,6 +85,10 @@ export async function googleSignIn(): Promise<{
     }
     cachedAccessToken = credential.accessToken;
     return { user: result.user, accessToken: cachedAccessToken };
+  } catch (err) {
+    const hostname =
+      typeof window !== 'undefined' ? window.location.hostname : '';
+    throw new GoogleAuthActionError(formatGoogleAuthError(err, hostname));
   } finally {
     isSigningIn = false;
   }
