@@ -1,5 +1,5 @@
 import type { LogSheet, OutputOverrideMap } from '../types/logSheet';
-import { createSampleSheet } from './logSheet';
+import { createSampleSheet, DEFAULT_STORAGE_LOCATION } from './logSheet';
 
 const STORAGE_KEY_SHEETS = 'karunia_oil_log_sheets_v1';
 const STORAGE_KEY_ACTIVE = 'karunia_oil_active_sheet_v1';
@@ -39,9 +39,13 @@ export function loadStoredSheets(): StoredState {
     if (rawSheets) {
       const parsed = JSON.parse(rawSheets) as LogSheet[];
       if (Array.isArray(parsed) && parsed.length > 0) {
-        sheets = parsed;
-        const activeExists = parsed.some((s) => s.id === rawActive);
-        activeSheetId = activeExists && rawActive ? rawActive : parsed[0].id;
+        sheets = parsed.map((sheet) =>
+          sheet.storageLocation?.trim() === 'Lube Station Pit A'
+            ? { ...sheet, storageLocation: DEFAULT_STORAGE_LOCATION }
+            : sheet
+        );
+        const activeExists = sheets.some((s) => s.id === rawActive);
+        activeSheetId = activeExists && rawActive ? rawActive : sheets[0].id;
       }
     }
   } catch {

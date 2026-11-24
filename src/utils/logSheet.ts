@@ -1,3 +1,4 @@
+import { WAREHOUSE_LOCATIONS } from '../data/masterData';
 import type {
   ConsumptionRow,
   LogSheet,
@@ -22,13 +23,12 @@ export const COMMON_OIL_DESCRIPTIONS = [
 
 export const COMMON_SHIFTS = ['Shift 1', 'Shift 2', 'Day Shift', 'Night Shift'];
 
-export const COMMON_LOCATIONS = [
-  'Lube Station Pit A',
-  'Workshop Main Plant',
-  'Lube Truck 01',
-  'Lube Truck 02',
-  'Warehouse Oil Storage',
-];
+export const COMMON_LOCATIONS = WAREHOUSE_LOCATIONS.map(
+  (loc) => `${loc.code} - ${loc.warehouseName}`
+);
+
+export const DEFAULT_STORAGE_LOCATION =
+  COMMON_LOCATIONS[0] ?? 'LST21 - LS WORKSHOP MUARA PAHU TBG-IPH';
 
 export function createEmptyStockInRows(): StockInRow[] {
   return Array.from({ length: STOCK_IN_ROW_COUNT }, (_, idx) => ({
@@ -128,7 +128,7 @@ export function createBlankSheet(overrides?: Partial<LogSheet>): LogSheet {
     id: generateSheetId(),
     date: getTodayIsoDate(),
     workingShift: 'Shift 1',
-    storageLocation: 'Lube Station Pit A',
+    storageLocation: DEFAULT_STORAGE_LOCATION,
     stockIn: createEmptyStockInRows(),
     rows: createEmptyConsumptionRows(),
     signatures: {
@@ -234,7 +234,7 @@ export function createSampleSheet(): LogSheet {
     id: generateSheetId(),
     date: getTodayIsoDate(),
     workingShift: 'Shift 1',
-    storageLocation: 'Lube Station Pit A',
+    storageLocation: DEFAULT_STORAGE_LOCATION,
     stockIn,
     rows,
     signatures: {

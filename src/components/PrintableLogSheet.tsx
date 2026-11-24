@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Calendar, Clock, RotateCcw } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Calendar, ChevronDown, Clock, RotateCcw } from 'lucide-react';
 import {
   MATERIAL_CODES,
   UNIT_CODES,
@@ -7,9 +7,9 @@ import {
 } from '../data/masterData';
 import type { ConsumptionRow, LogSheet } from '../types/logSheet';
 import {
-  COMMON_LOCATIONS,
   COMMON_OIL_DESCRIPTIONS,
   COMMON_SHIFTS,
+  DEFAULT_STORAGE_LOCATION,
   calculateFlowmeterLiters,
   formatDisplayDate,
   getCurrentTimeHHmm,
@@ -25,7 +25,23 @@ interface PrintableLogSheetProps {
 export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const datePickerRef = useRef<HTMLInputElement>(null);
+  const locationWrapperRef = useRef<HTMLDivElement>(null);
   const [focusedWaktuRow, setFocusedWaktuRow] = useState<number | null>(null);
+  const [showLocationMenu, setShowLocationMenu] = useState(false);
+
+  useEffect(() => {
+    if (!showLocationMenu) return;
+    const handleOutside = (e: MouseEvent) => {
+      if (
+        locationWrapperRef.current &&
+        !locationWrapperRef.current.contains(e.target as Node)
+      ) {
+        setShowLocationMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [showLocationMenu]);
 
   const updateMeta = (
     field: 'date' | 'workingShift' | 'storageLocation',
@@ -156,17 +172,6 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
           <option key={item} value={item} />
         ))}
       </datalist>
-      <datalist id="location-options">
-        {WAREHOUSE_LOCATIONS.map((loc) => (
-          <option
-            key={loc.code}
-            value={`${loc.code} - ${loc.warehouseName}`}
-          />
-        ))}
-        {COMMON_LOCATIONS.map((item) => (
-          <option key={item} value={item} />
-        ))}
-      </datalist>
       <datalist id="status-options">
         <option value="PM">PM : PREVENTIVE MAINTENANCE</option>
         <option value="ADD">ADD : ADDITIONAL</option>
@@ -266,17 +271,96 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
             </label>
             <span className="text-center">:</span>
             <span className="text-center">:</span>
-            <div className="border-b border-black h-[17px]">
+            <div
+              ref={locationWrapperRef}
+              className="relative flex items-center border-b border-black h-[17px]"
+            >
               <input
                 id="sheet-storage-location"
                 type="text"
-                list="location-options"
                 aria-label="Storage Location"
                 value={sheet.storageLocation}
-                onChange={(e) => updateMeta('storageLocation', e.target.value)}
-                placeholder="Lube Station / Workshop"
-                className="w-full h-full bg-transparent px-1 text-[11px] font-semibold focus:outline-none focus:bg-amber-50/60"
+                onFocus={() => setShowLocationMenu(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape' || e.key === 'Tab') {
+                    setShowLocationMenu(false);
+                  }
+                }}
+                onChange={(e) => {
+                  updateMeta('storageLocation', e.target.value);
+                  setShowLocationMenu(true);
+                }}
+                placeholder={DEFAULT_STORAGE_LOCATION}
+                className="w-full h-full bg-transparent px-1 text-[10.5px] font-semibold focus:outline-none focus:bg-amber-50/60"
               />
+              <button
+                type="button"
+                title="Pilih Storage Location (Master Data)"
+                aria-label="Pilih Storage Location"
+                aria-expanded={showLocationMenu}
+                onClick={() => setShowLocationMenu((prev) => !prev)}
+                className="no-print p-0.5 text-slate-500 hover:text-emerald-700 cursor-pointer shrink-0"
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+              {showLocationMenu && (() => {
+                const trimmedUpper = sheet.storageLocation.trim().toUpperCase();
+                const isExactMaster = WAREHOUSE_LOCATIONS.some(
+                  (loc) =>
+                    `${loc.code} - ${loc.warehouseName}`.toUpperCase() ===
+                      trimmedUpper || loc.code === trimmedUpper
+                );
+                const matchedLocations =
+                  !trimmedUpper || isExactMaster
+                    ? WAREHOUSE_LOCATIONS
+                    : WAREHOUSE_LOCATIONS.filter(
+                        (loc) =>
+                          loc.code.includes(trimmedUpper) ||
+                          loc.warehouseName.includes(trimmedUpper)
+                      );
+                const visibleLocations =
+                  matchedLocations.length > 0
+                    ? matchedLocations
+                    : WAREHOUSE_LOCATIONS;
+
+                return (
+                  <div
+                    role="listbox"
+                    aria-label="Master Storage Location"
+                    className="no-print absolute left-0 top-full mt-1 z-30 w-[370px] bg-white border border-slate-200 rounded-md shadow-lg py-1 text-left"
+                  >
+                    {visibleLocations.map((loc) => {
+                      const formatted = `${loc.code} - ${loc.warehouseName}`;
+                      const isSelected =
+                        formatted.toUpperCase() === trimmedUpper ||
+                        loc.code === trimmedUpper;
+                      return (
+                        <button
+                          key={loc.code}
+                          type="button"
+                          role="option"
+                          aria-selected={isSelected}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            updateMeta('storageLocation', formatted);
+                            setShowLocationMenu(false);
+                          }}
+                          className={`w-full px-2.5 py-1.5 text-left text-[11px] flex items-center gap-2 hover:bg-emerald-50 cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-emerald-50 text-emerald-900 font-bold'
+                              : 'text-slate-700 font-medium'
+                          }`}
+                        >
+                          <span className="font-data-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 shrink-0">
+                            {loc.code}
+                          </span>
+                          <span className="truncate">{loc.warehouseName}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

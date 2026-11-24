@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { WAREHOUSE_LOCATIONS } from '../data/masterData';
 import {
+  COMMON_LOCATIONS,
+  DEFAULT_STORAGE_LOCATION,
   calculateFlowmeterLiters,
   computeSheetTotals,
   createBlankSheet,
@@ -42,13 +45,18 @@ test('calculateFlowmeterLiters handles empty inputs and flags negative differenc
   });
 });
 
-test('createBlankSheet produces 5 stock-in rows and 20 consumption rows', () => {
+test('createBlankSheet produces 5 stock-in rows and 20 consumption rows with master storageLocation', () => {
   const sheet = createBlankSheet({ workingShift: 'Shift 2' });
   assert.equal(sheet.stockIn.length, 5);
   assert.equal(sheet.rows.length, 20);
   assert.equal(sheet.rows[0].rowNumber, 1);
   assert.equal(sheet.rows[19].rowNumber, 20);
   assert.equal(sheet.workingShift, 'Shift 2');
+  assert.equal(sheet.storageLocation, DEFAULT_STORAGE_LOCATION);
+  assert.equal(COMMON_LOCATIONS.length, WAREHOUSE_LOCATIONS.length);
+  assert.ok(
+    COMMON_LOCATIONS.includes('WOG18 - WHS OIL & GREASE SITE SENYIUR IPR-SYR')
+  );
 });
 
 test('computeSheetTotals aggregates stock-in, flowmeter, greasing, coolant, and statuses', () => {
