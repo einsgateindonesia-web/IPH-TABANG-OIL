@@ -413,8 +413,8 @@ export default function App() {
               </div>
 
               <div className="text-slate-500">
-                Ketik langsung di kolom tabel · Tekan Enter untuk pindah ke
-                baris bawah
+                Ketik langsung di kolom · Gunakan Panah (↑↓←→) atau Enter untuk
+                pindah sel · F2 edit teks
               </div>
             </div>
 

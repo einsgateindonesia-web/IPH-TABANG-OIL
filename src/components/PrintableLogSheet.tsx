@@ -15,6 +15,10 @@ import {
   getCurrentTimeHHmm,
   parseLocaleNumber,
 } from '../utils/logSheet';
+import {
+  CONSUMPTION_TABLE_COLUMNS,
+  resolveGridNavigationTarget,
+} from '../utils/tableNavigation';
 import { KaruniaLogo } from './KaruniaLogo';
 
 interface PrintableLogSheetProps {
@@ -130,21 +134,44 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
     });
   };
 
-  // Spreadsheet-like vertical Enter navigation inside the 20-row table
+  // Spreadsheet-like 4-way arrow, Enter/Shift+Enter, and F2 navigation inside the 20-row table
   const handleCellKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
     rowIndex: number,
     colKey: string
   ) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'F2') {
       e.preventDefault();
-      const nextRow = rowIndex + 1;
-      if (nextRow < sheet.rows.length && sheetRef.current) {
-        const nextInput = sheetRef.current.querySelector<HTMLInputElement>(
-          `input[data-cell="${nextRow}-${colKey}"]`
-        );
-        nextInput?.focus();
-        nextInput?.select();
+      const len = e.currentTarget.value.length;
+      e.currentTarget.setSelectionRange(len, len);
+      return;
+    }
+
+    const targetCoord = resolveGridNavigationTarget({
+      key: e.key,
+      shiftKey: e.shiftKey,
+      altKey: e.altKey,
+      ctrlKey: e.ctrlKey,
+      metaKey: e.metaKey,
+      rowIndex,
+      colKey,
+      rowCount: sheet.rows.length,
+      columns: CONSUMPTION_TABLE_COLUMNS,
+      selection: {
+        valueLength: e.currentTarget.value.length,
+        selectionStart: e.currentTarget.selectionStart,
+        selectionEnd: e.currentTarget.selectionEnd,
+      },
+    });
+
+    if (targetCoord && sheetRef.current) {
+      e.preventDefault();
+      const nextInput = sheetRef.current.querySelector<HTMLInputElement>(
+        `input[data-cell="${targetCoord.rowIndex}-${targetCoord.colKey}"]`
+      );
+      if (nextInput) {
+        nextInput.focus();
+        nextInput.select();
       }
     }
   };
@@ -491,12 +518,20 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
                       aria-label={`Log baris ${row.rowNumber} Waktu`}
                       value={row.waktu}
                       onFocus={() => setFocusedWaktuRow(idx)}
-                      onBlur={() => setTimeout(() => setFocusedWaktuRow(null), 150)}
+                      onBlur={() =>
+                        setTimeout(
+                          () =>
+                            setFocusedWaktuRow((prev) =>
+                              prev === idx ? null : prev
+                            ),
+                          150
+                        )
+                      }
                       onKeyDown={(e) => handleCellKeyDown(e, idx, 'waktu')}
                       onChange={(e) =>
                         updateConsumptionRow(idx, 'waktu', e.target.value)
                       }
-                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-amber-50/70"
+                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-amber-50/70 focus:ring-2 focus:ring-inset focus:ring-emerald-600 print:ring-0"
                     />
                     {focusedWaktuRow === idx && (
                       <button
@@ -526,7 +561,7 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
                       onChange={(e) =>
                         updateConsumptionRow(idx, 'noUnit', e.target.value)
                       }
-                      className="w-full h-full bg-transparent text-center font-medium text-[10px] px-1 focus:outline-none focus:bg-amber-50/70"
+                      className="w-full h-full bg-transparent text-center font-medium text-[10px] px-1 focus:outline-none focus:bg-amber-50/70 focus:ring-2 focus:ring-inset focus:ring-emerald-600 print:ring-0"
                     />
                   </td>
 
@@ -541,7 +576,7 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
                       onChange={(e) =>
                         updateConsumptionRow(idx, 'modelUnit', e.target.value)
                       }
-                      className="w-full h-full bg-transparent text-left text-[10px] px-1 focus:outline-none focus:bg-amber-50/70"
+                      className="w-full h-full bg-transparent text-left text-[10px] px-1 focus:outline-none focus:bg-amber-50/70 focus:ring-2 focus:ring-inset focus:ring-emerald-600 print:ring-0"
                     />
                   </td>
 
@@ -557,7 +592,7 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
                       onChange={(e) =>
                         updateConsumptionRow(idx, 'hm', e.target.value)
                       }
-                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-amber-50/70"
+                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-amber-50/70 focus:ring-2 focus:ring-inset focus:ring-emerald-600 print:ring-0"
                     />
                   </td>
 
@@ -577,7 +612,7 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
                           e.target.value
                         )
                       }
-                      className="w-full h-full bg-transparent text-left text-[10px] px-1.5 focus:outline-none focus:bg-amber-50/70"
+                      className="w-full h-full bg-transparent text-left text-[10px] px-1.5 focus:outline-none focus:bg-amber-50/70 focus:ring-2 focus:ring-inset focus:ring-emerald-600 print:ring-0"
                     />
                   </td>
 
@@ -593,7 +628,7 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
                       onChange={(e) =>
                         updateConsumptionRow(idx, 'flowmeterAwal', e.target.value)
                       }
-                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-amber-200/50"
+                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-amber-200/50 focus:ring-2 focus:ring-inset focus:ring-emerald-600 print:ring-0"
                     />
                   </td>
 
@@ -613,7 +648,7 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
                           e.target.value
                         )
                       }
-                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-amber-200/50"
+                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-amber-200/50 focus:ring-2 focus:ring-inset focus:ring-emerald-600 print:ring-0"
                     />
                   </td>
 
@@ -646,7 +681,7 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
                           e.target.value
                         )
                       }
-                      className={`w-full h-full bg-transparent text-center font-data-mono font-semibold text-[10px] px-0.5 focus:outline-none focus:bg-amber-200/50 ${
+                      className={`w-full h-full bg-transparent text-center font-data-mono font-semibold text-[10px] px-0.5 focus:outline-none focus:bg-amber-200/50 focus:ring-2 focus:ring-inset focus:ring-emerald-600 print:ring-0 ${
                         isFlowAnomaly ? 'text-red-700 print:text-black' : ''
                       }`}
                     />
@@ -679,7 +714,7 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
                           e.target.value
                         )
                       }
-                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-sky-200/50"
+                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-sky-200/50 focus:ring-2 focus:ring-inset focus:ring-emerald-600 print:ring-0"
                     />
                   </td>
 
@@ -695,7 +730,7 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
                       onChange={(e) =>
                         updateConsumptionRow(idx, 'greasingKg', e.target.value)
                       }
-                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-sky-200/50"
+                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-sky-200/50 focus:ring-2 focus:ring-inset focus:ring-emerald-600 print:ring-0"
                     />
                   </td>
 
@@ -711,7 +746,7 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
                       onChange={(e) =>
                         updateConsumptionRow(idx, 'collantMenit', e.target.value)
                       }
-                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-amber-50/70"
+                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-amber-50/70 focus:ring-2 focus:ring-inset focus:ring-emerald-600 print:ring-0"
                     />
                   </td>
 
@@ -727,7 +762,7 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
                       onChange={(e) =>
                         updateConsumptionRow(idx, 'collantLiter', e.target.value)
                       }
-                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-amber-50/70"
+                      className="w-full h-full bg-transparent text-center font-data-mono text-[10px] px-0.5 focus:outline-none focus:bg-amber-50/70 focus:ring-2 focus:ring-inset focus:ring-emerald-600 print:ring-0"
                     />
                   </td>
 
@@ -747,7 +782,7 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
                           e.target.value.toUpperCase()
                         )
                       }
-                      className="w-full h-full bg-transparent text-center font-semibold text-[10px] px-1 focus:outline-none focus:bg-amber-50/70"
+                      className="w-full h-full bg-transparent text-center font-semibold text-[10px] px-1 focus:outline-none focus:bg-amber-50/70 focus:ring-2 focus:ring-inset focus:ring-emerald-600 print:ring-0"
                     />
                   </td>
                 </tr>

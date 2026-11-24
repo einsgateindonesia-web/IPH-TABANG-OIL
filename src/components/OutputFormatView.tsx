@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Check,
   Copy,
@@ -29,6 +29,10 @@ import {
   outputRowsToTsv,
 } from '../utils/outputMapper';
 import { buildSpreadsheetWorksheets } from '../utils/spreadsheetBuilder';
+import {
+  OUTPUT_TABLE_COLUMNS,
+  resolveGridNavigationTarget,
+} from '../utils/tableNavigation';
 import { SpreadsheetConnectionBar } from './SpreadsheetConnectionBar';
 
 interface OutputFormatViewProps {
@@ -77,6 +81,56 @@ export function OutputFormatView({
   const [unitQuery, setUnitQuery] = useState('');
   const [masterQuery, setMasterQuery] = useState('');
   const [copied, setCopied] = useState(false);
+  const outputTableRef = useRef<HTMLTableElement>(null);
+
+  const handleOutputCellKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>,
+    rowIndex: number,
+    colKey: string
+  ) => {
+    const isSelect = e.currentTarget.tagName === 'SELECT';
+    if (!isSelect && e.key === 'F2') {
+      e.preventDefault();
+      const inputEl = e.currentTarget as HTMLInputElement;
+      const len = inputEl.value.length;
+      inputEl.setSelectionRange(len, len);
+      return;
+    }
+
+    const targetCoord = resolveGridNavigationTarget({
+      key: e.key,
+      shiftKey: e.shiftKey,
+      altKey: e.altKey,
+      ctrlKey: e.ctrlKey,
+      metaKey: e.metaKey,
+      rowIndex,
+      colKey,
+      rowCount: outputRows.length,
+      columns: OUTPUT_TABLE_COLUMNS,
+      isSelectElement: isSelect,
+      selection: isSelect
+        ? undefined
+        : {
+            valueLength: (e.currentTarget as HTMLInputElement).value.length,
+            selectionStart: (e.currentTarget as HTMLInputElement)
+              .selectionStart,
+            selectionEnd: (e.currentTarget as HTMLInputElement).selectionEnd,
+          },
+    });
+
+    if (targetCoord && outputTableRef.current) {
+      e.preventDefault();
+      const nextEl = outputTableRef.current.querySelector<
+        HTMLInputElement | HTMLSelectElement
+      >(`[data-out-cell="${targetCoord.rowIndex}-${targetCoord.colKey}"]`);
+      if (nextEl) {
+        nextEl.focus();
+        if (nextEl instanceof HTMLInputElement) {
+          nextEl.select();
+        }
+      }
+    }
+  };
 
   const targetSheets = useMemo(
     () => (scope === 'active' ? [activeSheet] : sheets),
@@ -459,6 +513,7 @@ export function OutputFormatView({
             <div className="bg-white border border-slate-300 rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
                 <table
+                  ref={outputTableRef}
                   data-testid="output-format-table"
                   className="w-full border-collapse text-xs"
                 >
@@ -492,14 +547,18 @@ export function OutputFormatView({
                             <input
                               type="text"
                               list="master-unit-code-options"
+                              data-out-cell={`${idx}-unitCode`}
                               aria-label={`Baris ${idx + 1} Unit Code`}
                               value={row.unitCode}
+                              onKeyDown={(e) =>
+                                handleOutputCellKeyDown(e, idx, 'unitCode')
+                              }
                               onChange={(e) =>
                                 onUpdateOverride(row.rowKey, {
                                   unitCode: e.target.value,
                                 })
                               }
-                              className="w-full bg-transparent px-2 py-1.5 font-semibold text-slate-900 focus:outline-none focus:bg-white"
+                              className="w-full bg-transparent px-2 py-1.5 font-semibold text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-inset focus:ring-emerald-600"
                             />
                           </td>
 
@@ -508,14 +567,18 @@ export function OutputFormatView({
                             <input
                               type="text"
                               list="master-code-alias-options"
+                              data-out-cell={`${idx}-codeAlias`}
                               aria-label={`Baris ${idx + 1} Code Alias`}
                               value={row.codeAlias}
+                              onKeyDown={(e) =>
+                                handleOutputCellKeyDown(e, idx, 'codeAlias')
+                              }
                               onChange={(e) =>
                                 onUpdateOverride(row.rowKey, {
                                   codeAlias: e.target.value,
                                 })
                               }
-                              className="w-full bg-transparent px-2 py-1.5 text-slate-900 focus:outline-none focus:bg-white"
+                              className="w-full bg-transparent px-2 py-1.5 text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-inset focus:ring-emerald-600"
                             />
                           </td>
 
@@ -532,14 +595,18 @@ export function OutputFormatView({
                           {/* 5. Compnent* */}
                           <td className="border border-slate-300 p-0 min-w-[125px]">
                             <select
+                              data-out-cell={`${idx}-componentCode`}
                               aria-label={`Baris ${idx + 1} Compnent`}
                               value={row.componentCode}
+                              onKeyDown={(e) =>
+                                handleOutputCellKeyDown(e, idx, 'componentCode')
+                              }
                               onChange={(e) =>
                                 onUpdateOverride(row.rowKey, {
                                   componentCode: e.target.value,
                                 })
                               }
-                              className={`w-full bg-transparent px-1.5 py-1.5 font-data-mono focus:outline-none focus:bg-white cursor-pointer ${
+                              className={`w-full bg-transparent px-1.5 py-1.5 font-data-mono focus:outline-none focus:bg-white focus:ring-2 focus:ring-inset focus:ring-emerald-600 cursor-pointer ${
                                 !row.componentCode
                                   ? 'text-amber-700 font-semibold'
                                   : 'text-slate-900'
@@ -557,14 +624,18 @@ export function OutputFormatView({
                           {/* 6. Type Of Out */}
                           <td className="border border-slate-300 p-0 min-w-[130px]">
                             <select
+                              data-out-cell={`${idx}-typeOfOutCode`}
                               aria-label={`Baris ${idx + 1} Type Of Out`}
                               value={row.typeOfOutCode}
+                              onKeyDown={(e) =>
+                                handleOutputCellKeyDown(e, idx, 'typeOfOutCode')
+                              }
                               onChange={(e) =>
                                 onUpdateOverride(row.rowKey, {
                                   typeOfOutCode: e.target.value,
                                 })
                               }
-                              className={`w-full bg-transparent px-1.5 py-1.5 font-data-mono focus:outline-none focus:bg-white cursor-pointer ${
+                              className={`w-full bg-transparent px-1.5 py-1.5 font-data-mono focus:outline-none focus:bg-white focus:ring-2 focus:ring-inset focus:ring-emerald-600 cursor-pointer ${
                                 !row.typeOfOutCode
                                   ? 'text-amber-700 font-semibold'
                                   : 'text-slate-900'
@@ -582,14 +653,22 @@ export function OutputFormatView({
                           {/* 7. Code Storage Loc. */}
                           <td className="border border-slate-300 p-0 min-w-[100px]">
                             <select
+                              data-out-cell={`${idx}-storageLocCode`}
                               aria-label={`Baris ${idx + 1} Code Storage Loc`}
                               value={row.storageLocCode}
+                              onKeyDown={(e) =>
+                                handleOutputCellKeyDown(
+                                  e,
+                                  idx,
+                                  'storageLocCode'
+                                )
+                              }
                               onChange={(e) =>
                                 onUpdateOverride(row.rowKey, {
                                   storageLocCode: e.target.value,
                                 })
                               }
-                              className="w-full bg-transparent px-1.5 py-1.5 font-data-mono text-slate-900 focus:outline-none focus:bg-white cursor-pointer"
+                              className="w-full bg-transparent px-1.5 py-1.5 font-data-mono text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-inset focus:ring-emerald-600 cursor-pointer"
                             >
                               <option value="">-- Pilih --</option>
                               {WAREHOUSE_LOCATIONS.map((loc) => (
@@ -610,6 +689,7 @@ export function OutputFormatView({
                             <input
                               type="text"
                               list="master-material-code-options"
+                              data-out-cell={`${idx}-materialCode`}
                               aria-label={`Baris ${idx + 1} Material Code`}
                               title={
                                 matchedOilName
@@ -617,13 +697,16 @@ export function OutputFormatView({
                                   : `Input asli: ${row.rawOilDescription || row.mediumKind}`
                               }
                               value={row.materialCode}
+                              onKeyDown={(e) =>
+                                handleOutputCellKeyDown(e, idx, 'materialCode')
+                              }
                               onChange={(e) =>
                                 onUpdateOverride(row.rowKey, {
                                   materialCode: e.target.value,
                                 })
                               }
                               placeholder="Cari kode..."
-                              className="w-full bg-transparent px-2 py-1.5 font-data-mono font-medium text-slate-900 focus:outline-none focus:bg-white"
+                              className="w-full bg-transparent px-2 py-1.5 font-data-mono font-medium text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-inset focus:ring-emerald-600"
                             />
                           </td>
 
@@ -632,14 +715,18 @@ export function OutputFormatView({
                             <input
                               type="text"
                               inputMode="decimal"
+                              data-out-cell={`${idx}-qtyLiter`}
                               aria-label={`Baris ${idx + 1} Qty Liter`}
                               value={row.qtyLiter}
+                              onKeyDown={(e) =>
+                                handleOutputCellKeyDown(e, idx, 'qtyLiter')
+                              }
                               onChange={(e) =>
                                 onUpdateOverride(row.rowKey, {
                                   qtyLiter: e.target.value,
                                 })
                               }
-                              className="w-full bg-transparent px-2 py-1.5 text-right font-data-mono font-semibold text-slate-900 focus:outline-none focus:bg-white"
+                              className="w-full bg-transparent px-2 py-1.5 text-right font-data-mono font-semibold text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-inset focus:ring-emerald-600"
                             />
                           </td>
                         </tr>
