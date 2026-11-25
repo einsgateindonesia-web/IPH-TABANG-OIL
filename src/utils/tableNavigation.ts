@@ -24,6 +24,50 @@ export const OUTPUT_TABLE_COLUMNS = [
   'qtyLiter',
 ] as const;
 
+export const SPREADSHEET_OUTPUT_COLUMNS = [
+  'unitCode',
+  'codeAlias',
+  'timeHHMM',
+  'componentCode',
+  'typeOfOutCode',
+  'storageLocCode',
+  'hmKm',
+  'materialCode',
+  'qtyLiter',
+] as const;
+
+export const SPREADSHEET_LOG_COLUMNS = [
+  'date',
+  'workingShift',
+  'storageLocation',
+  'waktu',
+  'noUnit',
+  'modelUnit',
+  'hm',
+  'oil',
+  'fmAwal',
+  'fmAkhir',
+  'fmLiter',
+  'gMenit',
+  'gKg',
+  'cMenit',
+  'cLiter',
+  'status',
+  'driverMechanic',
+  'glSpvPlant',
+  'glSpvScm',
+  'deptHeadPlant',
+] as const;
+
+export const SPREADSHEET_STOCK_IN_COLUMNS = [
+  'date',
+  'workingShift',
+  'storageLocation',
+  'waktu',
+  'description',
+  'quantity',
+] as const;
+
 export interface CellCoord {
   rowIndex: number;
   colKey: string;

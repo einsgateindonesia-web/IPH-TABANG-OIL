@@ -15,6 +15,7 @@ import type {
   LinkedGoogleSpreadsheet,
   LogSheet,
   OutputOverrideMap,
+  OutputRowOverride,
   PrimarySpreadsheetConfig,
   SpreadsheetIncludeOptions,
 } from '../types/logSheet';
@@ -36,7 +37,6 @@ import {
 import { formatDisplayDate } from '../utils/logSheet';
 import {
   buildSpreadsheetWorksheets,
-  columnIndexToLetter,
   computeRowSyncKey,
   extractSpreadsheetId,
   type WorksheetSpec,
@@ -48,6 +48,7 @@ import {
   savePrimarySpreadsheet,
   saveSyncedRowKeys,
 } from '../utils/storage';
+import { EditableSpreadsheetGrid } from './EditableSpreadsheetGrid';
 import { SpreadsheetConnectionBar } from './SpreadsheetConnectionBar';
 
 interface SpreadsheetViewProps {
@@ -58,6 +59,9 @@ interface SpreadsheetViewProps {
   primaryConfig: PrimarySpreadsheetConfig | null;
   onSetPrimaryConfig: (config: PrimarySpreadsheetConfig | null) => void;
   onOpenSetupModal: () => void;
+  onUpdateSheet: (sheetId: string, updater: (sheet: LogSheet) => LogSheet) => void;
+  onUpdateOverride: (rowKey: string, patch: Partial<OutputRowOverride>) => void;
+  onOpenOutputTab: () => void;
   syncTick: number;
   onSynced: () => void;
 }
@@ -83,6 +87,9 @@ export function SpreadsheetView({
   primaryConfig,
   onSetPrimaryConfig,
   onOpenSetupModal,
+  onUpdateSheet,
+  onUpdateOverride,
+  onOpenOutputTab,
   syncTick,
   onSynced,
 }: SpreadsheetViewProps) {
@@ -405,10 +412,6 @@ export function SpreadsheetView({
   const toggleOption = (key: keyof SpreadsheetIncludeOptions) => {
     setOptions((prev) => ({ ...prev, [key]: !prev[key] }));
   };
-
-  const previewRows = activePreviewSheet
-    ? activePreviewSheet.rows.slice(0, 120)
-    : [];
 
   return (
     <section className="max-w-[1380px] mx-auto px-4 sm:px-6 py-6 space-y-5">
@@ -864,12 +867,12 @@ export function SpreadsheetView({
         )}
       </div>
 
-      {/* Live Excel-Style Workbook Preview */}
+      {/* Live Excel-Style Workbook Preview & Direct Input */}
       <div className="bg-white border border-slate-300 rounded-lg overflow-hidden">
         <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-800">
-              Pratinjau Workbook Spreadsheet
+              Workbook Spreadsheet (Input &amp; Pratinjau)
             </span>
             {activePreviewSheet && (
               <span className="text-xs text-slate-500 tabular-nums">
@@ -879,9 +882,12 @@ export function SpreadsheetView({
             )}
           </div>
           {activePreviewSheet &&
-            activePreviewSheet.rows.length > previewRows.length && (
+            activePreviewSheet.rows.length > 120 &&
+            activePreviewSheet.title !== 'Format Output' &&
+            activePreviewSheet.title !== 'Log Sheet' &&
+            activePreviewSheet.title !== 'Stock In' && (
               <span className="text-[11px] text-slate-500">
-                Menampilkan {previewRows.length} baris pertama dari{' '}
+                Menampilkan 120 baris pertama dari{' '}
                 {activePreviewSheet.rows.length} baris (semua baris ikut
                 diekspor)
               </span>
@@ -890,96 +896,22 @@ export function SpreadsheetView({
 
         {!activePreviewSheet ? (
           <div className="p-8 text-center text-sm text-slate-600">
-            Centang minimal satu sheet di atas untuk melihat pratinjau
+            Centang minimal satu sheet di atas untuk melihat dan mengisi
             spreadsheet.
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto max-h-[460px] overflow-y-auto">
-              <table
-                data-testid="spreadsheet-preview-table"
-                className="w-full border-collapse text-xs"
-              >
-                <thead className="sticky top-0 z-10">
-                  {/* Excel Column Letters Row */}
-                  <tr className="bg-slate-100 text-slate-500 text-[11px] font-data-mono">
-                    <th className="w-10 border border-slate-300 bg-slate-200/70 py-1 px-1.5 text-center" />
-                    {activePreviewSheet.headers.map((_, colIdx) => (
-                      <th
-                        key={colIdx}
-                        className="border border-slate-300 py-1 px-2 text-center font-medium"
-                      >
-                        {columnIndexToLetter(colIdx)}
-                      </th>
-                    ))}
-                  </tr>
-                  {/* Sheet Column Header Row (#000080 Navy) */}
-                  <tr className="bg-[#000080] text-white font-semibold">
-                    <th className="w-10 border border-slate-400/60 bg-slate-200 text-slate-600 py-1.5 px-1.5 text-center font-data-mono text-[11px]">
-                      1
-                    </th>
-                    {activePreviewSheet.headers.map((header, colIdx) => (
-                      <th
-                        key={colIdx}
-                        className="border border-slate-400/50 px-2.5 py-2 whitespace-nowrap text-center"
-                      >
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {previewRows.length === 0 ? (
-                    <tr>
-                      <td className="border border-slate-300 bg-slate-100 text-slate-500 text-center font-data-mono py-2">
-                        2
-                      </td>
-                      <td
-                        colSpan={activePreviewSheet.headers.length}
-                        className="border border-slate-300 px-4 py-6 text-center text-slate-500"
-                      >
-                        Belum ada data pada sheet {activePreviewSheet.title}.
-                      </td>
-                    </tr>
-                  ) : (
-                    previewRows.map((row, rowIdx) => {
-                      const zebra = rowIdx % 2 === 0;
-                      const rowBg = zebra
-                        ? activePreviewSheet.zebraBgHex === '#D9E2F3'
-                          ? 'bg-[#D9E2F3]/55'
-                          : 'bg-slate-50'
-                        : 'bg-white';
-                      const numericCols = new Set(
-                        activePreviewSheet.numericColumns ?? []
-                      );
-
-                      return (
-                        <tr
-                          key={rowIdx}
-                          className={`${rowBg} hover:bg-amber-50/50`}
-                        >
-                          <td className="border border-slate-300 bg-slate-100 text-slate-500 text-center font-data-mono text-[11px] py-1 px-1.5">
-                            {rowIdx + 2}
-                          </td>
-                          {row.map((cell, colIdx) => (
-                            <td
-                              key={colIdx}
-                              className={`border border-slate-300 px-2.5 py-1.5 whitespace-nowrap text-slate-900 ${
-                                numericCols.has(colIdx)
-                                  ? 'text-right font-data-mono'
-                                  : 'text-left'
-                              }`}
-                            >
-                              {cell === '' ? '' : String(cell)}
-                            </td>
-                          ))}
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <EditableSpreadsheetGrid
+              activePreviewSheet={activePreviewSheet}
+              targetSheets={targetSheets}
+              activeSheet={activeSheet}
+              overrides={overrides}
+              fallbackStorageCode={fallbackStorageCode}
+              splitGreaseAndCoolant={options.splitGreaseAndCoolant}
+              onUpdateSheet={onUpdateSheet}
+              onUpdateOverride={onUpdateOverride}
+              onOpenOutputTab={onOpenOutputTab}
+            />
 
             {/* Bottom Excel-style Worksheet Tabs */}
             <div

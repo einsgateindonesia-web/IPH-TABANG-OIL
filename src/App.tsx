@@ -86,6 +86,15 @@ export default function App() {
     );
   };
 
+  const handleUpdateSheetById = (
+    sheetId: string,
+    updater: (sheet: LogSheet) => LogSheet
+  ) => {
+    setSheets((prev) =>
+      prev.map((item) => (item.id === sheetId ? updater(item) : item))
+    );
+  };
+
   const handleToggleAutoCalc = (enabled: boolean) => {
     const nextRows = activeSheet.rows.map((row) => {
       if (!enabled || row.flowmeterManualOverride) return row;
@@ -482,6 +491,9 @@ export default function App() {
             primaryConfig={primarySpreadsheet}
             onSetPrimaryConfig={setPrimarySpreadsheet}
             onOpenSetupModal={() => setShowSendSheets(true)}
+            onUpdateSheet={handleUpdateSheetById}
+            onUpdateOverride={handleUpdateOutputOverride}
+            onOpenOutputTab={() => setActiveTab('output')}
             syncTick={syncTick}
             onSynced={() => setSyncTick((t) => t + 1)}
           />

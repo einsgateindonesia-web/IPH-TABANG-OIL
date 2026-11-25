@@ -7,7 +7,6 @@ import {
 } from '../data/masterData';
 import type { ConsumptionRow, LogSheet } from '../types/logSheet';
 import {
-  COMMON_OIL_DESCRIPTIONS,
   COMMON_SHIFTS,
   DEFAULT_STORAGE_LOCATION,
   calculateFlowmeterLiters,
@@ -180,17 +179,19 @@ export function PrintableLogSheet({ sheet, onChange }: PrintableLogSheetProps) {
     <div className="print-container w-full overflow-x-auto pb-6 print:pb-0">
       {/* Shared Datalists for fast field data entry */}
       <datalist id="oil-lube-options">
-        {COMMON_OIL_DESCRIPTIONS.map((item) => (
-          <option key={item} value={item} />
-        ))}
         {MATERIAL_CODES.filter(
           (m) =>
             !m.oilName.includes('SEAL') &&
             !m.oilName.includes('GASKET') &&
-            !m.oilName.includes('NIPPLE')
+            !m.oilName.includes('NIPPLE') &&
+            !m.oilName.includes('DIPSTICK') &&
+            !m.oilName.includes('GROMMET') &&
+            !m.oilName.includes('WASHER') &&
+            !m.oilName.includes('PLUG') &&
+            !m.oilName.includes('COLLECT')
         ).map((m) => (
-          <option key={m.materialCode} value={m.oilName}>
-            {m.materialCode}
+          <option key={m.materialCode} value={m.materialCode}>
+            {m.oilName}
           </option>
         ))}
       </datalist>

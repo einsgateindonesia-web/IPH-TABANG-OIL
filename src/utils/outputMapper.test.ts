@@ -227,4 +227,30 @@ test('single grease-only or coolant-only input without flowmeter emits 1 row ins
   assert.equal(unsplitRows[1].qtyLiter, '5');
 });
 
+test('OIL & LUBE DESCRIPTION in Lembar Log always matches Format Output Material Code* verbatim and resolves Compnent*', () => {
+  const sheet = createBlankSheet({
+    date: '2026-11-24',
+    storageLocation: 'LST21',
+  });
+  sheet.rows[0].waktu = '08:00';
+  sheet.rows[0].noUnit = 'DLKY200';
+  sheet.rows[0].hm = '1000';
+  sheet.rows[0].oilLubeDescription = 'LO1PAN-TRSMS50DR';
+  sheet.rows[0].flowmeterLiter = '15';
+  sheet.rows[0].keteranganStatus = 'PM';
+
+  sheet.rows[1].waktu = '08:30';
+  sheet.rows[1].noUnit = 'DT-204';
+  sheet.rows[1].hm = '2000';
+  sheet.rows[1].oilLubeDescription = 'CUSTOM ENGINE OIL 15W-40';
+  sheet.rows[1].flowmeterLiter = '20';
+  sheet.rows[1].keteranganStatus = 'ADD';
+
+  const mapped = mapSheetsToOutputRows([sheet], { overrides: {} });
+  assert.equal(mapped.length, 2);
+  assert.equal(mapped[0].materialCode, 'LO1PAN-TRSMS50DR');
+  assert.equal(mapped[0].componentCode, 'TR001');
+  assert.equal(mapped[1].materialCode, 'CUSTOM ENGINE OIL 15W-40');
+  assert.equal(mapped[1].componentCode, 'EN001');
+});
 

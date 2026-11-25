@@ -38,6 +38,14 @@ for (const u of UNIT_CODES) {
   }
 }
 
+const MATERIAL_NAME_BY_CODE = new Map<string, string>();
+for (const m of MATERIAL_CODES) {
+  const codeKey = m.materialCode.trim().toUpperCase();
+  if (!MATERIAL_NAME_BY_CODE.has(codeKey)) {
+    MATERIAL_NAME_BY_CODE.set(codeKey, m.oilName.trim().toUpperCase());
+  }
+}
+
 export function resolveUnitIdentity(rawNoUnit: string): {
   unitCode: string;
   codeAlias: string;
@@ -183,15 +191,19 @@ export function inferComponentCode(
   if (mediumKind === 'grease') return 'AU001';
   if (mediumKind === 'coolant') return 'CO001';
 
-  const upper = oilDescription.trim().toUpperCase();
-  if (!upper) return '';
+  const rawUpper = oilDescription.trim().toUpperCase();
+  if (!rawUpper) return '';
 
   // Direct component code match
   for (const comp of COMPARTEMENTS) {
-    if (upper === comp.code || upper.startsWith(`${comp.code} `)) {
+    if (rawUpper === comp.code || rawUpper.startsWith(`${comp.code} `)) {
       return comp.code;
     }
   }
+
+  // Enrich material code with master oilName so selecting a material code still resolves Compnent*
+  const matchedOilName = MATERIAL_NAME_BY_CODE.get(rawUpper) ?? '';
+  const upper = matchedOilName ? `${rawUpper} ${matchedOilName}` : rawUpper;
 
   if (
     upper.includes('COOLANT') ||
@@ -467,24 +479,18 @@ export function mapSheetsToOutputRows(
         const rowKey = `${sheet.id}:${row.rowNumber}:${mediumKind}`;
         const ov = overrides[rowKey] ?? {};
 
-        const defaultDesc =
-          mediumKind === 'grease'
-            ? 'Grease EP-2'
-            : mediumKind === 'coolant'
-              ? 'Coolant Radiator'
-              : row.oilLubeDescription;
-
+        const rawTrimmedDesc = row.oilLubeDescription.trim();
         const descComp = inferComponentCode(row.oilLubeDescription, 'oil');
-        const materialSourceDesc =
+        const resolvedMaterialCode =
           mediumKind === 'oil'
-            ? row.oilLubeDescription
+            ? rawTrimmedDesc || inferMaterialCode(row.oilLubeDescription, 'oil')
             : mediumKind === 'grease'
-              ? !hasFlowmeterQty || descComp === 'AU001'
-                ? row.oilLubeDescription || defaultDesc
-                : defaultDesc
-              : !hasFlowmeterQty || descComp === 'CO001'
-                ? row.oilLubeDescription || defaultDesc
-                : defaultDesc;
+              ? rawTrimmedDesc && (!hasFlowmeterQty || descComp === 'AU001')
+                ? rawTrimmedDesc
+                : inferMaterialCode('Grease EP-2', 'grease')
+              : rawTrimmedDesc && (!hasFlowmeterQty || descComp === 'CO001')
+                ? rawTrimmedDesc
+                : inferMaterialCode('Coolant Radiator', 'coolant');
 
         return {
           rowKey,
@@ -501,9 +507,7 @@ export function mapSheetsToOutputRows(
           typeOfOutCode: ov.typeOfOutCode ?? inferredType,
           storageLocCode: ov.storageLocCode ?? inferredLoc,
           hmKm,
-          materialCode:
-            ov.materialCode ??
-            inferMaterialCode(materialSourceDesc, mediumKind),
+          materialCode: ov.materialCode ?? resolvedMaterialCode,
           qtyLiter: ov.qtyLiter ?? defaultQty,
           rawOilDescription: row.oilLubeDescription,
           rawStatus: row.keteranganStatus,

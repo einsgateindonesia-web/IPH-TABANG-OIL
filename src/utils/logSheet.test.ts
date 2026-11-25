@@ -112,5 +112,5 @@ test('formatDisplayDate and sheetToCsv format accurately', () => {
   const csv = sheetToCsv(sample);
   assert.ok(csv.includes("OIL & LUBRICANT'S CONSUMPTION LOG SHEET"));
   assert.ok(csv.includes('DT-204'));
-  assert.ok(csv.includes('SAE 15W-40 Engine Oil'));
+  assert.ok(csv.includes('LO1PAN-SAE15W-40DR'));
 });

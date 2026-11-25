@@ -149,13 +149,13 @@ export function createSampleSheet(): LogSheet {
   stockIn[0] = {
     rowNumber: 1,
     waktu: '07:15',
-    description: 'SAE 15W-40 Engine Oil',
+    description: 'LO1PAN-SAE15W-40DR',
     quantity: '209',
   };
   stockIn[1] = {
     rowNumber: 2,
     waktu: '07:20',
-    description: 'SAE 10W Hydraulic Oil',
+    description: 'LO1PAN-HYD10WDR',
     quantity: '209',
   };
 
@@ -166,7 +166,7 @@ export function createSampleSheet(): LogSheet {
     noUnit: 'DT-204',
     modelUnit: 'Hino FM 260 JD',
     hm: '6420',
-    oilLubeDescription: 'SAE 15W-40 Engine Oil',
+    oilLubeDescription: 'LO1PAN-SAE15W-40DR',
     flowmeterAwal: '12450',
     flowmeterAkhir: '12478',
     flowmeterLiter: '28',
@@ -183,7 +183,7 @@ export function createSampleSheet(): LogSheet {
     noUnit: 'EX-112',
     modelUnit: 'Komatsu PC200-8',
     hm: '8155',
-    oilLubeDescription: 'SAE 10W Hydraulic Oil',
+    oilLubeDescription: 'LO1PAN-HYD10WDR',
     flowmeterAwal: '12478',
     flowmeterAkhir: '12513',
     flowmeterLiter: '35',
@@ -200,7 +200,7 @@ export function createSampleSheet(): LogSheet {
     noUnit: 'DZ-05',
     modelUnit: 'Cat D85ESS',
     hm: '10230',
-    oilLubeDescription: 'SAE 30 Transmission Oil',
+    oilLubeDescription: 'LO1PTM-SAE30W',
     flowmeterAwal: '12513',
     flowmeterAkhir: '12531',
     flowmeterLiter: '18',
@@ -217,7 +217,7 @@ export function createSampleSheet(): LogSheet {
     noUnit: 'DT-209',
     modelUnit: 'Volvo FMX 400',
     hm: '5190',
-    oilLubeDescription: 'SAE 15W-40 Engine Oil',
+    oilLubeDescription: 'LO1PAN-SAE15W-40DR',
     flowmeterAwal: '12531',
     flowmeterAkhir: '12563',
     flowmeterLiter: '32',
